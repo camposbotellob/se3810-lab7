@@ -40,7 +40,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         f.write(form['imagedata'].value)
         f.close()
         
-        output = subprocess.check_output('python C:\\Users\\camposbotellob\\Box\\School\\SoftwareArchitecture\\ARProject\\models\\tutorials\\image\\imagenet\\classify_image.py --image_file \"' + data_directory + '\\' + 'img' + "\"", shell=True)
+        output = subprocess.check_output('python C:\\Users\\camposbotellob\\Box\\School\\SoftwareArchitecture\\se3810-lab7\\model\\tutorials\\image\\imagenet\\classify_image.py --image_file \"' + data_directory + '\\' + 'img' + "\"", shell=True)
         #os.remove(data_directory + '/' + form['filename'].value)
         self.wfile.write(output + str.encode("\nResponse Time: " + str(time.time() - start) + "\n"))        
         os.remove(data_directory + '\\' + form['filename'].value)
