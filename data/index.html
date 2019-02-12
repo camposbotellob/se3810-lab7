@@ -1,0 +1,133 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <title>Soft Arch AR</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+<body>
+    <div class="container">
+        <h1 class="mt-5">AR Application</h1>
+        <h2>Image Recognition</h2>
+        <div class="custom-file">
+            <input type="file" class="custom-file-input" id="fileupload" name="imagedata">
+            <label class="custom-file-label" for="fileupload">Choose file</label>
+        </div>
+        <button type="button" class="btn btn-primary btn-block mt-2 mb-5" value="submit" id="submit" />
+        <span class="spinner-border spinner-border-sm" id="spinner" role="status" aria-hidden="true" style="display: none;"></span>
+        <span id="submit-text">Search</span>
+        </button>
+        <h3 id="response-time" style="display: none;">Server Response Time: </h3>
+        <canvas id="canvas" width="1000" height="500"></canvas>
+    </div>
+    
+    <script>
+        var myChart = {};
+        var toJSON;
+    $(document).ready(function(){
+        let ctx = document.getElementById("canvas").getContext('2d');
+        Chart.defaults.global.defaultFontColor = 'black';
+        bsCustomFileInput.init();
+        toJSON = function (string) {
+            let retVal = {};
+            retVal.results = [];
+            retVal.scores = [];
+            let lines = string.split('\n');
+            for(var i = 0;i < lines.length;i++){
+                if(lines[i].indexOf('Response Time') > -1) {
+                    retVal.responseTime = Number(lines[i].substr(lines[i].indexOf(': ') + 2));
+                }else if (lines[i].length > 0){
+                    retVal.results.push(lines[i].substr(0, lines[i].indexOf(' (')));
+                    retVal.scores.push(Number(lines[i].slice(lines[i].indexOf('(score = ') + 9, -2)));
+                }
+            }
+            return retVal;
+        };
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['','','','',''],
+                datasets: [{
+                    label: 'Match Scores',
+                    data: [0,0,0,0,0],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255,99,132,1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero:true,
+                            fontSize: 20
+                        }
+                    }],
+                    xAxes: [{
+                        ticks: {
+                            fontColor: 'black',
+                        }
+                    }]
+                },
+                legend: {
+                    labels: {
+                        fontSize: 24
+                    }
+                }
+            }
+        });
+
+        console.log(myChart);
+
+        $("#submit").click(function(){
+            $('#submit')[0].disabled = true;
+            $('#submit-text').text('Loading...');
+            $('#spinner').show();
+            var fd = new FormData();
+            var files = $('#fileupload')[0].files[0];
+            fd.append('imagedata',files);
+            fd.append('filename', 'file');
+            
+            $.ajax({
+                url: '/',
+                type: 'post',
+                data: fd,
+                contentType: false,
+                processData: false,
+                success: function(response){
+                    let results = toJSON(response);
+                    myChart.data.labels = results.results;
+                    myChart.data.datasets[0].data = results.scores;
+                    myChart.update();
+                    $('#response-time').text('Server Response Time: ' + results.responseTime.toFixed(2) + ' seconds').show();
+                },
+                complete: function () {
+                    $('#submit-text').text('Search');
+                    $('#spinner').hide();
+                    $('#submit')[0].disabled = false;
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>
